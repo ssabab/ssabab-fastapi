@@ -1,0 +1,1 @@
+# GET /models/predict: 사용자 입력(예: user_id)을 받아 추천 결과 반환
