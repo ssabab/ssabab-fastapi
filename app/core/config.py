@@ -2,6 +2,11 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 from typing import Optional, Set
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# 환경변수 로딩
+load_dotenv(override=True)
 
 class Settings(BaseSettings):
     # API 설정
@@ -12,6 +17,13 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     DEBUG: bool = True
+    
+    # MySQL 설정
+    MYSQL_HOST: str
+    MYSQL_PORT: int
+    MYSQL_USER: str
+    MYSQL_PASSWORD: str
+    MYSQL_DB: str
     
     # 파일 업로드 설정
     UPLOAD_DIR: Path = Path("uploads")
@@ -34,6 +46,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        env_file_encoding = 'utf-8'
 
 @lru_cache()
 def get_settings() -> Settings:
@@ -44,3 +57,12 @@ def get_settings() -> Settings:
 
 # 설정 인스턴스 생성
 settings = get_settings()
+
+# DB 설정
+DB_CONFIG = {
+    "host": settings.MYSQL_HOST,
+    "port": settings.MYSQL_PORT,
+    "user": settings.MYSQL_USER,
+    "password": settings.MYSQL_PASSWORD,
+    "database": settings.MYSQL_DB
+}
