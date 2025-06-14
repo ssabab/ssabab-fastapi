@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import os
 from app.core.config import settings
+from app.core.logger import logger
 
 class OCRService:
     def __init__(self):
@@ -52,7 +53,9 @@ class OCRService:
     async def process_image(self, file_content: bytes) -> dict:
         # 파일 크기 체크
         if len(file_content) > settings.MAX_UPLOAD_SIZE:
-            raise ValueError(f"파일 크기가 너무 큽니다. 최대 {settings.MAX_UPLOAD_SIZE} bytes까지 허용됩니다.")
+            error_msg = f"파일 크기가 너무 큽니다. 최대 {settings.MAX_UPLOAD_SIZE} bytes까지 허용됩니다."
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         # 임시 파일 저장
         temp_file = settings.UPLOAD_DIR / "temp_image.jpg"
@@ -71,6 +74,8 @@ class OCRService:
                 'enableTableDetection': self.enable_table_detection
             }
 
+            logger.info(f"OCR API 요청 - requestId: {request_json['requestId']}, 버전: {self.ocr_version}")
+
             payload = {'message': json.dumps(request_json).encode('UTF-8')}
             files = [('file', open(temp_file, 'rb'))]
             headers = {'X-OCR-SECRET': self.secret_key}
@@ -79,7 +84,9 @@ class OCRService:
             result = response.json()
 
             if 'tables' not in result['images'][0]:
-                return {"error": "표를 찾을 수 없습니다."}
+                error_msg = "표를 찾을 수 없습니다."
+                logger.error(error_msg)
+                return {"error": error_msg}
 
             # 표 처리
             tables = result['images'][0]['tables']
@@ -103,7 +110,12 @@ class OCRService:
                 }
                 processed_tables.append(menu_data)
 
+            logger.info(f"OCR 처리 완료 - 발견된 표 수: {len(processed_tables)}")
             return {"tables": processed_tables}
+
+        except Exception as e:
+            logger.error(f"OCR 처리 중 오류 발생: {str(e)}")
+            raise
 
         finally:
             # 임시 파일 삭제
